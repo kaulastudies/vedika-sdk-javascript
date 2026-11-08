@@ -99,6 +99,7 @@ import {
   QuestionErrorCode,
 } from './exceptions';
 import { certifiedIdempotencyHeaders } from './idempotency-policy';
+import { sseData } from './sse';
 import type { VoiceQuery, VoiceResult, VoiceMetaHeader, VoiceResponse } from './types';
 // Value import (runtime helper) — transition-tolerant western normalizer (3.0.6).
 import { normalizeWesternRelationship, VASTU_OPERATIONS } from './types';
@@ -959,7 +960,8 @@ export class VedikaClient {
    * Stream conversational astrology question response in real-time
    *
    * @param query - Question query parameters
-   * @returns Async generator yielding response chunks
+   * @returns Async generator yielding complete SSE event data strings. Multiline
+   * data is joined with newlines; incomplete events at EOF are discarded.
    *
    * @example
    * ```typescript
@@ -985,16 +987,7 @@ export class VedikaClient {
       }
     );
 
-    const stream = response.data;
-
-    for await (const chunk of stream) {
-      const lines = chunk.toString().split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          yield line.substring(6);
-        }
-      }
-    }
+    yield* sseData(response.data);
   }
 
   /**

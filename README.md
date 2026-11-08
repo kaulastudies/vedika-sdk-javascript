@@ -632,6 +632,11 @@ answer), without one the 400 `OUTPUT_BUDGET_EXHAUSTED`.
 
 ### Streaming Responses (Real-Time)
 
+The iterator yields one string per complete Server-Sent Event (`data` payload),
+not per network chunk. Multiline data is joined with newlines; an unfinished
+event at connection end is discarded. Closing the iterator releases the
+response. A stream is never automatically retried.
+
 ```javascript
 // Stream responses for better UX
 for await (const chunk of client.askQuestionStream({
