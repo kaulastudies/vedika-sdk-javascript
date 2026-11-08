@@ -1734,15 +1734,20 @@ export class VedikaClient {
     return (response.data?.__envelope ?? response.data) as VastuJobsIdResultsResponse;
   }
 
-  /** Every finished item of a job, following `nextCursor` until it is null. */
+  /**
+   * Every finished item of a job, following `nextCursor` until it is null.
+   * @throws {ValidationError} If the server reuses a cursor, including in a longer cycle.
+   */
   async *vastuJobResultItems(jobId: string): AsyncGenerator<VastuJobResultItem> {
     let cursor: string | undefined;
+    const seenCursors = new Set<string>();
     for (;;) {
       const page: VastuJobsIdResultsResponse = await this.vastuJobResults(jobId, cursor === undefined ? undefined : { cursor });
       for (const item of page.data.results) yield item;
       const next = page.data.nextCursor;
       if (!next) return;
-      if (next === cursor) throw new ValidationError('The server returned the same results cursor twice');
+      if (seenCursors.has(next)) throw new ValidationError('The server returned the same results cursor twice');
+      seenCursors.add(next);
       cursor = next;
     }
   }
